@@ -1,0 +1,16 @@
+#BAO-only consensus results, Percival et al. 2016
+#https://arxiv.org/abs/1607.03155
+
+name = DR7bao
+
+num_bao=2
+
+bao_measurements_file = sdss_DR7_Percival_bao.dat
+bao_measurements_file_has_error = F
+
+#stored values are actually scaled by r_fid, so include that here
+#rs_rescale = 1/147.78 
+#rs_rescale = 154.722222222/150.6370305298101
+rs_rescale = 1.0271194385473743
+
+bao_cov_file = DR7_Percival_BAO_covtot.txt

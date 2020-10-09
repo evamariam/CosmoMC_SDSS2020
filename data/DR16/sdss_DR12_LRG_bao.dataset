@@ -1,0 +1,18 @@
+# BAO BOSS DR12 LRG 0.2<z<0.5 and 0.4<z<0.6
+# Based on Alam et al. 2016
+# https://arxiv.org/abs/1607.03155
+
+name=DR12LRGbao
+
+num_bao = 4
+
+bao_measurements_file = sdss_DR12_LRG_bao_consensus.dat
+bao_measurements_file_has_error = F
+
+#stored values are actually scaled by r_fid, so include that here
+#rs_rescale = 1/147.78 
+rs_rescale = .6766815537e-2
+
+
+bao_cov_file = sdss_DR12_LRG_bao_consensus_covtot.txt
+

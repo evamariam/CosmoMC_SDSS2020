@@ -1,0 +1,15 @@
+#BAO/RSD consensus results, Alam et al. 2016
+#https://arxiv.org/abs/1607.03155
+
+name = DR12LRGbaoFS
+
+num_bao=6
+
+bao_measurements_file = sdss_DR12_LRG_baoFS_consensus.dat
+bao_measurements_file_has_error = F
+
+#stored values are actually scaled by r_fid, so include that here
+#rs_rescale = 1/147.78 
+rs_rescale = .6766815537e-2
+
+bao_cov_file = sdss_DR12_LRG_baoFS_consensus_covtot.txt

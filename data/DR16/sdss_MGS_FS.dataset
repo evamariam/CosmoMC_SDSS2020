@@ -1,0 +1,12 @@
+#Isotropic MGS results
+#
+
+name=MGSFS
+
+
+num_bao=2
+
+bao_measurements_file = sdss_MGS_FS.dat
+bao_measurements_file_has_error = F
+
+bao_cov_file = sdss_MGS_FS_cov.txt

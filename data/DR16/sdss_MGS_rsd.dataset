@@ -1,0 +1,10 @@
+# Isotropic MGS results
+# Cullan Hollett
+
+name=MGSrsd
+
+zeff = 0.15
+
+measurement_type = f_sigma8
+
+bao_measurement = 0.527256 0.163160

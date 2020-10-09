@@ -1,0 +1,11 @@
+name = DR16ELGbaoFS
+
+zeff = 0.85
+
+DM_npoints = 100
+DH_npoints = 100
+fs8_npoints = 100
+
+prob_dist = sdss_DR16_ELG_FS_bao_consensus.dat
+
+measurement_type = dilation

@@ -1,0 +1,15 @@
+# BAO eBOSS DR16 0.6<z<1.0
+# Consensus (Fourier and Configuration space) results by eBOSS QSO team:
+# Jiamin , Richard
+# https://arxiv.org/abs/2007.XXYY
+# https://arxiv.org/abs/2007.XXYY
+
+name=DR16QSObao
+
+num_bao = 2
+
+bao_measurements_file = sdss_DR16_QSO_bao_consensus_RN_AJR_v7_2.2.dat
+bao_measurements_file_has_error = F
+
+
+bao_cov_file = sdss_DR16_QSO_bao_consensus_RN_AJR_v7_2_covtot.2.txt

@@ -1,0 +1,15 @@
+# BAORSD eBOSS DR16 0.6<z<1.0
+# Consensus (Fourier and Configuration space) results by eBOSS LRG team:
+# Julian Bautista, Hector Gil-Marin, Mariana Varga Magana, Romain Paviot,
+# Sylvain de la Torre
+# https://arxiv.org/abs/2007.XXYY
+
+name=DR16LRGbaoFS
+
+num_bao = 3
+
+bao_measurements_file = sdss_DR16_LRG_v10_baoFS.txt
+bao_measurements_file_has_error = F
+
+
+bao_cov_file = sdss_DR16_LRG_v10_baoFS_covtot.txt

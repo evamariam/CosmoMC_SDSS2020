@@ -1,0 +1,9 @@
+name = DR16ELGrsd
+
+zeff = 0.85
+
+fs8_npoints = 100
+
+prob_dist = sdss_DR16_ELG_rsd_consensus.dat
+
+measurement_type = dilation

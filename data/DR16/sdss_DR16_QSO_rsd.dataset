@@ -1,0 +1,13 @@
+# RSD eBOSS DR16 0.6<z<1.0
+# Consensus (Fourier and Configuration space) results by eBOSS QSO team:
+# Jiamin , Richard
+# https://arxiv.org/abs/2007.XXYY
+# https://arxiv.org/abs/2007.XXYY
+
+
+name=DR16QSOrsd
+
+measurement_type = f_sigma8
+
+zeff = 1.48
+bao_measurement = 0.4620   0.0449

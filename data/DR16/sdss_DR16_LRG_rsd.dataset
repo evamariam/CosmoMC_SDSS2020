@@ -1,0 +1,12 @@
+# RSD eBOSS DR16 0.6<z<1.0
+# Consensus (Fourier and Configuration space) results by eBOSS LRG team:
+# Julian Bautista, Hector Gil-Marin, Mariana Varga Magana, Romain Paviot,
+# Sylvain de la Torre
+# https://arxiv.org/abs/2007.XXYY
+
+name=DR16LRGrsd
+
+measurement_type = f_sigma8
+
+zeff = 0.698
+bao_measurement = 0.44844583  0.04343043
