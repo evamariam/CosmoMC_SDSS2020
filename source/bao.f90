@@ -15,6 +15,7 @@
     !Oct 2016: add support for dataset files no measurement_type, instead
     !              specified for each point in data file
     !PL Apr 2019: added Lyman alpha BAO from eBOSS DR12 and DR14
+    !Dec 2019 EM and ADM for eBOSS collaboration
 
     module bao
     use MatrixUtils
@@ -27,12 +28,14 @@
     implicit none
     private
 
-    character(LEN=Ini_Enumeration_Len), parameter :: measurement_types(10) = &
+    character(LEN=Ini_Enumeration_Len), parameter :: measurement_types(11) = &
         [character(Ini_Enumeration_Len)::'Az','DV_over_rs','rs_over_DV','DA_over_rs', &
-        'F_AP', 'f_sigma8','bao_Hz_rs','bao_Hz_rs_103','dilation','DM_over_rs']
+        'F_AP', 'f_sigma8','bao_Hz_rs','bao_Hz_rs_103','dilation','DM_over_rs', &
+        'DH_over_rs']
 
     integer, parameter :: bao_Az =1, bao_DV_over_rs = 2, bao_rs_over_DV = 3, bao_DA_over_rs = 4, &
-        F_AP= 5, f_sigma8=6, bao_Hz_rs = 7, bao_Hz_rs_103 = 8, dilation = 9, bao_DM_over_rs = 10
+        F_AP= 5, f_sigma8=6, bao_Hz_rs = 7, bao_Hz_rs_103 = 8, dilation = 9, bao_DM_over_rs = 10, &
+        bao_DH_over_rs = 11
 
     type, extends(TCosmoCalcLikelihood) :: TBAOLikelihood
         integer :: num_bao ! total number of points used
@@ -57,6 +60,34 @@
     procedure :: LogLike => BAO_DR1x_loglike
     procedure :: InitProbDist => BAO_DR1x_InitProbDist
     end type
+
+    Type, extends(TBAOLikelihood) :: BAORSD_DR1xLikelihood
+        real(mcp), allocatable, dimension(:) :: DM_file,DH_file,fs8_file
+        real(mcp), allocatable ::  prob_file(:,:,:)
+        integer DM_npoints, DH_npoints, fs8_npoints
+    contains
+    procedure :: LogLike => BAORSD_DR1x_loglike
+    procedure :: InitProbDist => BAORSD_DR1x_InitProbDist
+    end type
+
+    Type, extends(TBAOLikelihood) :: RSD_DR1xLikelihood
+        real(mcp), allocatable, dimension(:) :: fs8_file
+        real(mcp), allocatable ::  prob_file(:)
+        integer fs8_npoints
+    contains
+    procedure :: LogLike => RSD_DR1x_loglike
+    procedure :: InitProbDist => RSD_DR1x_InitProbDist
+    end type
+    
+    Type, extends(TBAOLikelihood) :: BAOiso_DR1xLikelihood
+        real(mcp), allocatable, dimension(:) :: DV_over_rs_file
+        real(mcp), allocatable ::  prob_file(:)
+        integer DV_over_rs_npoints
+    contains
+    procedure :: LogLike => BAOiso_DR1x_loglike
+    procedure :: InitProbDist => BAOiso_DR1x_InitProbDist
+    end type
+
 
     Type, extends(TBAOLikelihood) :: MGSLikelihood
         real(mcp), allocatable :: alpha_prob(:)
@@ -87,27 +118,37 @@
     end if
 
     do i= 1, DataSets%Count
-        call Ini%SettingValuesForTagName('bao_dataset',DataSets%Name(i),OverrideSettings)
-        if (Datasets%Name(i)=='MGS') then
-            allocate(MGSLikelihood::this)
-        else if (Datasets%Name(i)=='DR11CMASS') then
-            allocate(DR1xLikelihood::this)
-        else if (Datasets%Name(i)=='DR12CMASS') then
-            allocate(DR1xLikelihood::this)
-        else if (Datasets%Name(i)=='DR12LYA') then
-            allocate(DR1xLikelihood::this)
-        else if (Datasets%Name(i)=='DR14LYA') then
-            allocate(DR1xLikelihood::this)
-        else
-            allocate(TBAOLikelihood::this)
-        end if
-        call this%ReadDatasetFile(Datasets%Value(i),OverrideSettings)
-        this%tag = Datasets%Name(i)
-        this%LikelihoodType = 'BAO'
-        this%needs_background_functions = .true.
-        call LikeList%Add(this)
+       call Ini%SettingValuesForTagName('bao_dataset',DataSets%Name(i),OverrideSettings)
+       if (Datasets%Name(i)=='MGS') then
+          allocate(MGSLikelihood::this)
+       else if (Datasets%Name(i)=='DR11CMASS') then
+          allocate(DR1xLikelihood::this)
+       else if (Datasets%Name(i)=='DR12CMASS') then
+          allocate(DR1xLikelihood::this)
+       else if (Datasets%Name(i)=='DR12LYA') then
+          allocate(DR1xLikelihood::this)
+       else if (Datasets%Name(i)=='DR14LYA') then
+          allocate(DR1xLikelihood::this)
+       else if (Datasets%Name(i)=='DR16LYAUTO') then
+          allocate(DR1xLikelihood::this)
+       else if (Datasets%Name(i)=='DR16LYxQSO') then
+          allocate(DR1xLikelihood::this)
+       else if (Datasets%Name(i)=='DR16ELGbao') then
+          allocate(BAOiso_DR1xLikelihood::this)
+       else if (Datasets%Name(i)=='DR16ELGrsd') then
+          allocate(RSD_DR1xLikelihood::this)
+       else if (Datasets%Name(i)=='DR16ELGbaoFS') then
+          allocate(BAORSD_DR1xLikelihood::this)
+       else
+          allocate(TBAOLikelihood::this)
+       end if
+       call this%ReadDatasetFile(Datasets%Value(i),OverrideSettings)
+       this%tag = Datasets%Name(i)
+       this%LikelihoodType = 'BAO'
+       this%needs_background_functions = .true.
+       call LikeList%Add(this)
     end do
-
+    
     if (Feedback>1) write(*,*) 'read BAO data sets'
 
     end subroutine BAOLikelihood_Add
@@ -277,6 +318,7 @@
 
     do j=1, this%num_bao
         z= this%bao_z(j)
+
         select case(this%type_bao(j))
         case (bao_DV_over_rs)
             BAO_theory(j) = this%Calculator%BAO_D_v(z)/rs
@@ -295,9 +337,11 @@
         case (F_AP)
             BAO_theory(j) = (1+z)*this%Calculator%AngularDiameterDistance(z)* &
                 this%Calculator%Hofz(z)
-        case (f_sigma8)
+        case (bao_DH_over_rs)
+            BAO_theory(j) = 1./this%Calculator%Hofz(z)/rs
+        case (f_sigma8) 
             BAO_theory(j) = Theory%growth_z%Value(z)
-            case default
+         case default
             call MpiStop('BAO_LnLike: Unknown type_bao')
         end select
     end do
@@ -428,5 +472,215 @@
 
     end function BAO_MGS_loglike
 
+    subroutine BAORSD_DR1x_InitProbDist(this, Ini)
+    class(BAORSD_DR1xLikelihood) this
+    class(TSettingIni) :: Ini
+    real(mcp) :: tmp0,tmp1,tmp2,tmp3
+    integer ios,ii,jj,kk
+    Type(TTExtFile) F
+    integer :: DM_npoints, DH_npoints, fs8_npoints
+    DM_npoints = Ini%Read_Int('DM_npoints')
+    DH_npoints = Ini%Read_Int('DH_npoints')
+    fs8_npoints = Ini%Read_Int('fs8_npoints')
 
+    allocate(this%DM_file(DM_npoints),this%DH_file(DH_npoints),this%fs8_file(fs8_npoints))
+    allocate(this%prob_file(DM_npoints,DH_npoints,fs8_npoints))
+
+    call F%Open(Ini%ReadRelativeFileName('prob_dist'))
+    do ii=1, DM_npoints
+        do jj=1, DH_npoints
+            do kk=1, fs8_npoints
+                read (F%unit,*,iostat=ios) tmp0,tmp1,tmp2,tmp3
+                if (ios /= 0) call MpiStop('Error reading RSD file')
+                this%DM_file(ii)         = tmp0
+                this%DH_file(jj)          = tmp1
+                this%fs8_file(kk)        = tmp2
+                this%prob_file(ii,jj,kk) = tmp3
+            end do
+        end do
+    end do
+    call F%Close()
+
+    !Normalize distribution (so that the peak value is 1.0)
+
+    this%prob_file=this%prob_file/ maxval(this%prob_file)
+    this%DM_npoints = DM_npoints
+    this%DH_npoints = DH_npoints
+    this%fs8_npoints = fs8_npoints
+
+    end subroutine BAORSD_DR1x_InitProbDist
+
+    function BAORSD_DR1x_loglike(this, CMB, Theory, DataParams)
+    Class(BAORSD_DR1xLikelihood) :: this
+    Class(CMBParams) CMB
+    Class(TCosmoTheoryPredictions), target :: Theory
+    real(mcp) :: DataParams(:)
+    real (mcp) z, BAORSD_DR1x_loglike, DM, DH, fs8, prob, dx, dy, dz
+    integer i, j, k, ii, jj, kk
+    real(mcp) rsdrag_theory
+
+    z = this%bao_z(1)
+    rsdrag_theory = this%get_rs_drag(Theory)
+    DM = (1+z)*this%Calculator%AngularDiameterDistance(z)/rsdrag_theory
+    DH = 1./this%Calculator%Hofz(z)/rsdrag_theory
+    fs8 = Theory%growth_z%Value(z)
+    if ((DM < this%DM_file(1)).or.(DM > this%DM_file(this%DM_npoints-1)).or. &
+        & (DH < this%DH_file(1)).or.(DH > this%DH_file(this%DH_npoints-1)).or. &
+        & (fs8 < this%fs8_file(1)).or.(fs8 > this%fs8_file(this%fs8_npoints-1))) then
+        BAORSD_DR1x_loglike = logZero
+    else
+        do i=1,this%DM_npoints
+            if (DM - this%DM_file(i) .le. 0) then
+                ii = i-1
+                exit
+            end if
+        end do
+        do j=1,this%DH_npoints
+            if (DH - this%DH_file(j) .le. 0) then
+                jj = j-1
+                exit
+            end if
+        end do
+        do k=1,this%fs8_npoints
+            if (fs8 - this%fs8_file(k) .le. 0) then
+                kk = k-1
+                exit
+            end if
+        end do
+        dx = (DM-this%DM_file(ii))/(this%DM_file(ii+1)-this%DM_file(ii))
+        dy = (DH-this%DH_file(jj))/(this%DH_file(jj+1)-this%DH_file(jj))
+        dz = (fs8-this%fs8_file(kk))/(this%fs8_file(kk+1)-this%fs8_file(kk))
+        prob = this%prob_file(ii,jj,kk)*(1-dx)*(1-dy)*(1-dz) + this%prob_file(ii+1,jj,kk)*dx*(1-dy)*(1-dz) &
+            & + this%prob_file(ii,jj+1,kk)*(1-dx)*dy*(1-dz) + this%prob_file(ii,jj,kk+1)*(1-dx)*(1-dy)*dz &
+            & + this%prob_file(ii+1,jj+1,kk)*dx*dy*(1-dz) + this%prob_file(ii,jj+1,kk+1)*(1-dx)*dy*dz &
+            & + this%prob_file(ii+1,jj,kk+1)*dx*(1-dy)*dz + this%prob_file(ii+1,jj+1,kk+1)*dx*dy*dz
+        if  (prob > 0) then
+            BAORSD_DR1x_loglike = -log( prob )
+        else
+            BAORSD_DR1x_loglike = logZero
+        endif
+    endif
+    end function BAORSD_DR1x_loglike
+
+    subroutine BAOiso_DR1x_InitProbDist(this, Ini)
+    class(BAOiso_DR1xLikelihood) this
+    class(TSettingIni) :: Ini
+    real(mcp) :: tmp0,tmp1
+    integer ios,ii,jj,kk
+    Type(TTExtFile) F
+    integer :: DV_over_rs_npoints
+
+    DV_over_rs_npoints = Ini%Read_Int('DV_over_rs_npoints')
+
+    allocate(this%DV_over_rs_file(DV_over_rs_npoints))
+    allocate(this%prob_file(DV_over_rs_npoints))
+
+    call F%Open(Ini%ReadRelativeFileName('prob_dist'))
+    do ii=1, DV_over_rs_npoints
+        read (F%unit,*,iostat=ios) tmp0,tmp1
+        if (ios /= 0) call MpiStop('Error reading RSD file')
+        this%DV_over_rs_file(ii)         = tmp0
+        this%prob_file(ii) = tmp1
+    end do
+    call F%Close()
+
+    !Normalize distribution (so that the peak value is 1.0)
+
+    this%prob_file=this%prob_file/ maxval(this%prob_file)
+    this%DV_over_rs_npoints = DV_over_rs_npoints
+
+    end subroutine BAOiso_DR1x_InitProbDist
+
+    function BAOiso_DR1x_loglike(this, CMB, Theory, DataParams)
+    Class(BAOiso_DR1xLikelihood) :: this
+    Class(CMBParams) CMB
+    Class(TCosmoTheoryPredictions), target :: Theory
+    real(mcp) :: DataParams(:)
+    real (mcp) z, BAOiso_DR1x_loglike, DV_over_rs, prob
+    integer i, ii
+    real(mcp) rsdrag_theory
+
+    z = this%bao_z(1)
+    rsdrag_theory = this%get_rs_drag(Theory)
+    DV_over_rs= this%Calculator%BAO_D_v(z)/rsdrag_theory
+    if ((DV_over_rs < this%DV_over_rs_file(1)).or.&
+        & (DV_over_rs > this%DV_over_rs_file(this%DV_over_rs_npoints-1))) then
+        BAOiso_DR1x_loglike = logZero
+    else
+        do i=1,this%DV_over_rs_npoints
+            if (DV_over_rs - this%DV_over_rs_file(i) .le. 0) then
+                ii = i-1
+                exit
+            end if
+        end do
+        prob=(1./((this%DV_over_rs_file(ii+1)-this%DV_over_rs_file(ii))))*&
+            &(this%prob_file(ii)*(this%DV_over_rs_file(ii+1)-DV_over_rs)&
+            &-this%prob_file(ii+1)*(this%DV_over_rs_file(ii)-DV_over_rs))
+        if  (prob > 0) then
+            BAOiso_DR1x_loglike = -log( prob )
+        else
+            BAOiso_DR1x_loglike = logZero
+        endif
+    endif
+    end function BAOiso_DR1x_loglike
+   
+    subroutine RSD_DR1x_InitProbDist(this, Ini)
+    class(RSD_DR1xLikelihood) this
+    class(TSettingIni) :: Ini
+    real(mcp) :: tmp0,tmp1
+    integer ios,ii,jj,kk
+    Type(TTExtFile) F
+    integer :: fs8_npoints
+
+    fs8_npoints = Ini%Read_Int('fs8_npoints')
+
+    allocate(this%fs8_file(fs8_npoints))
+    allocate(this%prob_file(fs8_npoints))
+
+    call F%Open(Ini%ReadRelativeFileName('prob_dist'))
+    do ii=1, fs8_npoints
+        read (F%unit,*,iostat=ios) tmp0,tmp1
+        if (ios /= 0) call MpiStop('Error reading RSD file')
+        this%fs8_file(ii) = tmp0
+        this%prob_file(ii) = tmp1
+    end do
+    call F%Close()
+
+    !Normalize distribution (so that the peak value is 1.0)
+
+    this%prob_file=this%prob_file/ maxval(this%prob_file)
+    this%fs8_npoints = fs8_npoints
+
+    end subroutine RSD_DR1x_InitProbDist
+ 
+    function RSD_DR1x_loglike(this, CMB, Theory, DataParams)
+    Class(RSD_DR1xLikelihood) :: this
+    Class(CMBParams) CMB
+    Class(TCosmoTheoryPredictions), target :: Theory
+    real(mcp) :: DataParams(:)
+    real(mcp) :: z, RSD_DR1x_loglike, fs8, prob
+    integer i, ii
+
+    z = this%bao_z(1)
+    fs8 = Theory%growth_z%Value(z)
+    if ((fs8 < this%fs8_file(1)).or.&
+        & (fs8 > this%fs8_file(this%fs8_npoints-1))) then
+        RSD_DR1x_loglike = logZero
+    else
+        do i=1,this%fs8_npoints
+            if (fs8 - this%fs8_file(i) .le. 0) then
+                ii = i-1
+                exit
+            end if
+        end do
+        prob=(1./((this%fs8_file(ii+1)-this%fs8_file(ii))))*&
+            &(this%prob_file(ii)*(this%fs8_file(ii+1)-fs8)&
+            &-this%prob_file(ii+1)*(this%fs8_file(ii)-fs8))
+        if  (prob > 0) then
+            RSD_DR1x_loglike = -log( prob )
+        else
+            RSD_DR1x_loglike = logZero
+        endif
+    endif
+    end function RSD_DR1x_loglike
     end module bao
