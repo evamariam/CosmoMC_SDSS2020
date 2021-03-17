@@ -122,7 +122,7 @@ gDEC.datasets.append(batchjob.dataSet([WMAP,SN,DR7], [WMAPdata,SNdata,DR7data]))
 gDEC.datasets.append(batchjob.dataSet([WMAP,JLA,DR7,DES], [WMAPdata,JLAdata,DR7data,DESdata]))
 gDEC.datasets.append(batchjob.dataSet([WMAP,JLA,BAORSD], [WMAPdata,JLAdata, BAORSDdata]))
 gDEC.datasets.append(batchjob.dataSet([CMBLens,BAORSD,DES,SN], [CMBLensData,BAORSDdata,DESdata,SNdata]))
-#gDEC.datasets.append(batchjob.dataSet([CMBLens,DES,SN], [CMBLensData,DESdata,SNdata]))
+gDEC.datasets.append(batchjob.dataSet([CMBLens,DES,SN], [CMBLensData,DESdata,SNdata]))
 gDEC.datasets.append(batchjob.dataSet([WMAP,JLA,DR7,'BAOLya'], [WMAPdata,JLAdata,DR7data,'SDSS_final_BAO_Lya.ini']))
 groups.append(gDEC)
 

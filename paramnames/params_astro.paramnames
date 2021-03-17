@@ -24,3 +24,5 @@ sigma8*       \sigma_8
 S8*           S_8 #\sigma_8(\Omega_m/0.3)^{0.5}
 s8omegamp5*   \sigma_8 \Omega_m^{0.5}
 s8omegamp25*  \sigma_8 \Omega_m^{0.25}
+rdragh*       r_{\rm drag} h #Mpc
+rdrag*        r_{\rm{drag}}

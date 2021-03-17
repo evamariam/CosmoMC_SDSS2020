@@ -9,4 +9,4 @@ name=DR16LRGrsd
 measurement_type = f_sigma8
 
 zeff = 0.698
-bao_measurement = 0.44844583  0.04343043
+bao_measurement = 0.4485722586642568  0.0436089113382237

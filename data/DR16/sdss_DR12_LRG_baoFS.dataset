@@ -5,11 +5,13 @@ name = DR12LRGbaoFS
 
 num_bao=6
 
-bao_measurements_file = sdss_DR12_LRG_baoFS_consensus.dat
+bao_measurements_file = sdss_DR12_LRG_FSBAO_DMDHfs8.txt
+#bao_measurements_file = sdss_DR12_LRG_baoFS_consensus.dat
 bao_measurements_file_has_error = F
 
 #stored values are actually scaled by r_fid, so include that here
 #rs_rescale = 1/147.78 
-rs_rescale = .6766815537e-2
+#rs_rescale = .6766815537e-2
 
-bao_cov_file = sdss_DR12_LRG_baoFS_consensus_covtot.txt
+bao_cov_file = sdss_DR12_LRG_FSBAO_DMDHfs8_covtot.txt 
+#bao_cov_file = sdss_DR12_LRG_baoFS_consensus_covtot.txt

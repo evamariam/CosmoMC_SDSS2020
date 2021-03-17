@@ -4,11 +4,9 @@ name = DR16LYAUTO
 zeff =2.334
 
 is_square = T
-alpha_npoints = 50
-alpha_npoints_plel = 50
-prob_dist = sdss_DR16_LYAUTO_bao.dat
+DM_npoints = 50
+DH_npoints = 50
+prob_dist = sdss_DR16_LYAUTO_BAO_DMDHgrid.txt
 
-Hrd_fid = 34855.29
-DA_rd_fid = 11.759
 
 measurement_type = dilation

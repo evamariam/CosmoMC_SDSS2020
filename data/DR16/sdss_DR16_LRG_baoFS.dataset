@@ -8,8 +8,8 @@ name=DR16LRGbaoFS
 
 num_bao = 3
 
-bao_measurements_file = sdss_DR16_LRG_v10_baoFS.txt
+bao_measurements_file = sdss_DR16_LRG_v12_baoFS.txt
 bao_measurements_file_has_error = F
 
 
-bao_cov_file = sdss_DR16_LRG_v10_baoFS_covtot.txt
+bao_cov_file = sdss_DR16_LRG_v12_baoFS_covtot.txt

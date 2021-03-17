@@ -8,8 +8,8 @@ name=DR16LRGbao
 
 num_bao = 2
 
-bao_measurements_file = sdss_DR16_LRG_v10_bao.txt
+bao_measurements_file = sdss_DR16_LRG_v12_bao.txt
 bao_measurements_file_has_error = F
 
 
-bao_cov_file = sdss_DR16_LRG_v10_bao_covtot.txt
+bao_cov_file = sdss_DR16_LRG_v12_bao_covtot.txt

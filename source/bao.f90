@@ -57,6 +57,15 @@
         real(mcp), allocatable ::  prob_file(:,:)
         integer alpha_npoints_perp, alpha_npoints_plel
     contains
+    procedure :: LogLike => DR1x_loglike
+    procedure :: InitProbDist => DR1x_InitProbDist
+    end type
+    
+    Type, extends(TBAOLikelihood) :: BAO_DR1xLikelihood
+        real(mcp), allocatable, dimension(:) :: DM_file,DH_file
+        real(mcp), allocatable ::  prob_file(:,:)
+        integer DM_npoints, DH_npoints 
+    contains
     procedure :: LogLike => BAO_DR1x_loglike
     procedure :: InitProbDist => BAO_DR1x_InitProbDist
     end type
@@ -130,9 +139,9 @@
        else if (Datasets%Name(i)=='DR14LYA') then
           allocate(DR1xLikelihood::this)
        else if (Datasets%Name(i)=='DR16LYAUTO') then
-          allocate(DR1xLikelihood::this)
+          allocate(BAO_DR1xLikelihood::this)
        else if (Datasets%Name(i)=='DR16LYxQSO') then
-          allocate(DR1xLikelihood::this)
+          allocate(BAO_DR1xLikelihood::this)
        else if (Datasets%Name(i)=='DR16ELGbao') then
           allocate(BAOiso_DR1xLikelihood::this)
        else if (Datasets%Name(i)=='DR16ELGrsd') then
@@ -356,7 +365,7 @@
 
     !!!DR11/DR12 CMASS/LOWZ/LYA
 
-    subroutine BAO_DR1x_InitProbDist(this, Ini)
+    subroutine DR1x_InitProbDist(this, Ini)
     class(DR1xLikelihood) this
     class(TSettingIni) :: Ini
     real(mcp) :: tmp0,tmp1,tmp2
@@ -394,14 +403,53 @@
     this%alpha_npoints_perp = alpha_npoints_perp
     this%alpha_npoints_plel = alpha_npoints_plel
 
+    end subroutine DR1x_InitProbDist
+
+    subroutine BAO_DR1x_InitProbDist(this, Ini)
+    class(BAO_DR1xLikelihood) this
+    class(TSettingIni) :: Ini
+    real(mcp) :: tmp0,tmp1,tmp2
+    integer ios,ii,jj
+    Type(TTExtFile) F
+    integer :: DH_npoints, DM_npoints
+    logical is_square
+    is_square = Ini%Read_Logical('is_square',.true.)
+    DM_npoints = Ini%Read_Int('DM_npoints')
+    if (is_square .eqv. .true.) then
+        DH_npoints = DM_npoints
+    else
+        DH_npoints = Ini%Read_Int('DH_npoints')
+    end if
+
+    allocate(this%DH_file(DM_npoints),this%DM_file(DH_npoints))
+    allocate(this%prob_file(DM_npoints,DH_npoints))
+
+    call F%Open(Ini%ReadRelativeFileName('prob_dist'))
+    read (F%unit,*,iostat=ios) tmp0,tmp1,tmp2
+    do ii=1, DM_npoints
+        do jj=1, DH_npoints
+            read (F%unit,*,iostat=ios) tmp0,tmp1,tmp2
+            if (ios /= 0) call MpiStop('Error reading BAO file')
+            this%DM_file(ii)           = tmp0
+            this%DH_file(jj)           = tmp1
+            this%prob_file(ii,jj)      = tmp2
+        end do
+    end do
+    call F%Close()
+    !Normalize distribution (so that the peak value is 1.0)
+
+    this%prob_file=this%prob_file/ maxval(this%prob_file)
+    this%DM_npoints = DM_npoints
+    this%DH_npoints = DH_npoints
+
     end subroutine BAO_DR1x_InitProbDist
 
-    function BAO_DR1x_loglike(this, CMB, Theory, DataParams)
+    function DR1x_loglike(this, CMB, Theory, DataParams)
     Class(DR1xLikelihood) :: this
     Class(CMBParams) CMB
     Class(TCosmoTheoryPredictions), target :: Theory
     real(mcp) :: DataParams(:)
-    real (mcp) z, BAO_DR1x_loglike, alpha_perp, alpha_plel, prob
+    real (mcp) z, DR1x_loglike, alpha_perp, alpha_plel, prob
     integer i, j, ii,jj
     real(mcp) rsdrag_theory
 
@@ -411,7 +459,7 @@
     alpha_plel=(this%Hrd_fid)/((this%Calculator%Hofz_Hunit(z))*rsdrag_theory)!CMASS/LOWZ/LYA
     if ((alpha_perp < this%alpha_perp_file(1)).or.(alpha_perp > this%alpha_perp_file(this%alpha_npoints_perp-1)).or. &
         &   (alpha_plel < this%alpha_plel_file(1)).or.(alpha_plel > this%alpha_plel_file(this%alpha_npoints_plel-1))) then
-        BAO_DR1x_loglike = logZero
+        DR1x_loglike = logZero
     else
         do i=1,this%alpha_npoints_perp
             if (alpha_perp - this%alpha_perp_file(i) .le. 0) then
@@ -431,16 +479,57 @@
             &       -this%prob_file(ii,jj+1)*(this%alpha_perp_file(ii+1)-alpha_perp)*(this%alpha_plel_file(jj)-alpha_plel) &
             &       +this%prob_file(ii+1,jj+1)*(this%alpha_perp_file(ii)-alpha_perp)*(this%alpha_plel_file(jj)-alpha_plel))
         if  (prob > 0) then
+            DR1x_loglike = -log( prob )
+        else
+            DR1x_loglike = logZero
+        endif
+    endif
+    end function DR1x_loglike
+
+    !!!! SDSS DR7 main galaxy sample http://arxiv.org/abs/1409.3242
+    !Adapted from code by Lado Samushia
+   function BAO_DR1x_loglike(this, CMB, Theory, DataParams)
+    Class(BAO_DR1xLikelihood) :: this
+    Class(CMBParams) CMB
+    Class(TCosmoTheoryPredictions), target :: Theory
+    real(mcp) :: DataParams(:)
+    real (mcp) z, BAO_DR1x_loglike, DM, DH, prob
+    integer i, j, ii,jj
+    real(mcp) rsdrag_theory
+
+    z = this%bao_z(1)
+    rsdrag_theory = this%get_rs_drag(Theory)
+    DM =(1+z)*this%Calculator%AngularDiameterDistance(z)/rsdrag_theory
+    DH = 1./this%Calculator%Hofz(z)/rsdrag_theory
+    if ((DM < this%DM_file(1)).or.(DM > this%DM_file(this%DM_npoints-1)).or. &
+        &   (DH < this%DH_file(1)).or.(DH > this%DH_file(this%DH_npoints-1))) then
+        BAO_DR1x_loglike = logZero
+    else
+        do i=1,this%DM_npoints
+            if (DM - this%DM_file(i) .le. 0) then
+                ii = i-1
+                exit
+            end if
+        end do
+        do j=1,this%DH_npoints
+            if (DH - this%DH_file(j) .le. 0) then
+                jj = j-1
+                exit
+            end if
+        end do
+        prob=(1./((this%DM_file(ii+1)-this%DM_file(ii))*(this%DH_file(jj+1)-this%DH_file(jj))))*&
+            &(this%prob_file(ii,jj)*(this%DM_file(ii+1)-DM)*(this%DH_file(jj+1)-DH)&
+            &-this%prob_file(ii+1,jj)*(this%DM_file(ii)-DM)*(this%DH_file(jj+1)-DH)&
+            &-this%prob_file(ii,jj+1)*(this%DM_file(ii+1)-DM)*(this%DH_file(jj)-DH)&
+            &+this%prob_file(ii+1,jj+1)*(this%DM_file(ii)-DM)*(this%DH_file(jj)-DH))
+        if  (prob > 0) then
             BAO_DR1x_loglike = -log( prob )
         else
             BAO_DR1x_loglike = logZero
         endif
     endif
     end function BAO_DR1x_loglike
-
-    !!!! SDSS DR7 main galaxy sample http://arxiv.org/abs/1409.3242
-    !Adapted from code by Lado Samushia
-
+ 
     subroutine BAO_MGS_InitProbDist(this, Ini)
     class(MGSLikelihood) this
     class(TSettingIni) :: Ini

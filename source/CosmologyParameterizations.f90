@@ -506,7 +506,7 @@
     class(TCalculationAtParamPoint) :: Params
     Type(CMBParams) CMB
 
-    allocate(Derived(9))
+    allocate(Derived(11))
 
     call this%ParamArrayToTheoryParams(Params,CMB)
 
@@ -522,6 +522,8 @@
         derived(7) = Theory%Sigma_8*((CMB%omdm+CMB%omb)/0.3)**0.5_mcp
         derived(8) = Theory%Sigma_8*((CMB%omdm+CMB%omb))**0.5_mcp
         derived(9) = Theory%Sigma_8*((CMB%omdm+CMB%omb))**0.25_mcp
+        derived(10) = Theory%derived_parameters( derived_rdrag )*CMB%H0/100
+        derived(11) = Theory%derived_parameters( derived_rdrag )
     end select
 
     end subroutine AP_CalcDerivedParams
